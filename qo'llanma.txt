@@ -1,0 +1,112 @@
+============================================================
+WAVE MUSIC — QO'LLANMA (YouTube asosidagi musiqa pleeri)
+============================================================
+
+NAZARIYA
+--------
+- Start bosilganda muqova o'rniga YouTube VIDEO ochiladi (full ekran rejim).
+- Full player'da pastga SWIPE qilsangiz — mini-player ga tushadi.
+- Boshqa sahifaga (Kutubxona) o'tsangiz ham musiqa TO'XTAMAYDI,
+  chunki YouTube iframe App darajasida doim yashirin/moslashuvchan
+  holatda qoladi (YouTubeHost.jsx). Iframe umuman unmount bo'lmasligi
+  shart — aks holda ijro to'xtaydi.
+- Stack: React + Vite + Tailwind CSS + Zustand + YouTube IFrame API.
+
+TALABLAR
+--------
+- Node.js 18+ o'rnatilgan bo'lishi kerak (node -v bilan tekshiring).
+
+O'RNATISH VA ISHGA TUSHIRISH
+----------------------------
+1. Zip'ni oching.
+2. Terminal/promptda papkaga kiring:
+      cd wave-music
+3. Kerakli paketlarni o'rnating:
+      npm install
+4. Loyihani ishga tushiring:
+      npm run dev
+5. Brauzerda ko'rsatilgan manzilni oching (odatda http://localhost:5173).
+   ENG YAXSHI natija: telefon rejimida (DevTools -> device toolbar)
+   yoki real telefonda, Android Chrome'da.
+
+QANDAY ISHLATILADI
+------------------
+- Bosh sahifadagi trekni bosing — video to'g'ridan-to'g'ri ochiladi
+  (brauzer avtoijro cheklovi: ovozli video faqat siz bir marta
+  bosgandan keyin ijro etadi, biz "start" ni shu bosishga uladik).
+- Full player'da pastga suring (swipe) yoki ▾ tugmasini bosing —
+  mini-player ga tushadi.
+- Mini-player ustiga bossangiz — kattalashadi.
+- Kutilayotgan/oladigan trek tugaganda o'zi keyingisiga o'tadi,
+  xato bergan trek avtomatik o'tkazib yuboriladi.
+
+O'Z TREKLARINGIZNI QO'SHISH
+---------------------------
+src/data/tracks.js faylini oching va massivga qo'shing:
+
+  {
+    id: 3,
+    title: 'Trek nomi',
+    artist: 'Ijrochi',
+    youtubeId: 'YOUTUBE_VIDEO_ID',
+    cover: 'https://i.ytimg.com/vi/YOUTUBE_VIDEO_ID/hqdefault.jpg',
+  },
+
+- youtubeId: youtu.be/XXXXXXXXXXX yoki youtube.com/watch?v=XXXXXXXXXXX
+  linkidagi 11 ta belgili qism.
+- cover uchun API key kerak emas: yuqoridagi hqdefault.jpg shablonidan
+  foydalaning (muqova avtomatik olinadi).
+
+DEMO TREKLER
+------------
+- 2 ta demo trek (Lofi Girl oqimlari) berilgan. Ularni o'zingiz
+  yoqqan musiqalar bilan almashtiring. Oqim (live) videolarda
+  "duration" cheksiz bo'ladi — oddiy (premiered/oddiy) videolar
+  progress bar bilan to'g'ri ishlaydi.
+
+BILISH KERAK BO'LGAN CHEKLOVLAR (halol eslatma)
+-----------------------------------------------
+- iOS Safari: YouTube iframe fon ijrosi (ekran o'chganda davom etish)
+  cheklangan. Eng yaxshi natija — Android Chrome + PWA sifatida
+  o'rnatganda.
+- Video sifati YouTube tomonidan boshqariladi.
+- Keyingi qadamda PWA (manifest + service worker) qo'shilsa,
+  telefonga "app" kabi o'rnatish mumkin bo'ladi.
+
+LOYIHA STRUKTURASI
+------------------
+wave-music/
+├── index.html
+├── package.json
+├── vite.config.js
+├── tailwind.config.js
+├── postcss.config.js
+├── qo'llanma.txt           (shu fayl)
+└── src/
+    ├── main.jsx
+    ├── index.css
+    ├── App.jsx
+    ├── data/tracks.js           (trek ro'yxati — shu yerga qo'shasiz)
+    ├── player/controller.js     (YouTube player boshqaruvi)
+    ├── store/playerStore.js     (holat: rejim, trek, play/pause...)
+    ├── hooks/useYouTubePlayer.js(IFrame API ulanishi)
+    ├── utils/format.js          (vaqt formati)
+    ├── components/
+    │   ├── YouTubeHost.jsx      (iframe doimiy joylashuvi — MUHIM)
+    │   ├── FullPlayer.jsx       (to'liq ekran: video + boshqaruv)
+    │   ├── MiniPlayer.jsx       (pastki mini pleer)
+    │   └── TabBar.jsx           (navigatsiya)
+    └── pages/
+        ├── HomePage.jsx         (trek ro'yxati)
+        └── LibraryPage.jsx      (keyingi: playlistlar)
+
+KEYINGI BOSQICHLAR (taklif)
+---------------------------
+A) PWA: manifest.json + service worker -> telefonga o'rnatish.
+B) Media Session API -> lock screen'da boshqaruv tugmalari.
+C) Supabase backend -> o'z trek bazangiz, like/saqlash.
+D) Telefon raqam/email bilan kirish.
+
+============================================================
+Muvaffaqiyatlar! G'oya sizniki, kod Kimi'dan :)
+============================================================

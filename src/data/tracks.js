@@ -2,38 +2,95 @@ import { extractVideoId, getCoverUrl, generateTrackId } from '../utils/validator
 
 export const STORAGE_KEY = 'wave-music-tracks-v1';
 
-export const DEFAULT_TRACKS = [
+/**
+ * ============================================================
+ * 🎵 WAVE MUSIC — ASOSIY TREKLAR RO'YXATI (TRACKS LIST)
+ * ============================================================
+ * Yangi trek qo'shish uchun quyidagi CUSTOM_TRACKS ro'yxatiga yangi qator qo'shing:
+ *
+ *   {
+ *     title: 'Qo\'shiq nomi',
+ *     artist: 'Ijrochi',
+ *     url: 'https://www.youtube.com/watch?v=VIDEO_ID', // yoki shunchaki 'VIDEO_ID'
+ *   },
+ *
+ * 💡 ERROR 150 / 101 (Bloklangan video) HAQIDA:
+ * Ba'zi rasmiy VEVO musiqiy kliplari (masalan, Empire Of The Sun)
+ * mualliflik huquqi sababli YouTube tomonidan tashqi saytlarda bloklanadi.
+ * Buni chetlab o'tish uchun o'sha qo'shiqning:
+ *   1) "Lyrics" (qo'shiq matnli) versiyasi havolasi
+ *   2) "Official Audio" yoki "Topic" versiyasi havolasi
+ * qo'yilsa, 100% muammosiz va to'liq studio sifatidagi ovoz bilan ijro etiladi!
+ * ============================================================
+ */
+export const CUSTOM_TRACKS = [
   {
-    id: 'track-lofi-jfKfPfyJRdk',
+    title: 'We Are The People',
+    artist: 'Empire Of The Sun',
+    url: 'https://www.youtube.com/watch?v=J7MFQAB6R-Q', // Lyrics/Audio versiyasi (100% ishlaydi)
+  },
+  {
     title: 'Lofi Hip Hop Radio - Beats to Relax/Study to',
     artist: 'Lofi Girl',
-    videoId: 'jfKfPfyJRdk',
-    cover: getCoverUrl('jfKfPfyJRdk'),
-    addedAt: 1700000000000,
+    url: 'https://youtu.be/jfKfPfyJRdk',
   },
   {
-    id: 'track-lofi-4xDzrJKXOOY',
     title: 'Synthwave Radio - Chill Synth / Lofi',
     artist: 'Lofi Girl',
-    videoId: '4xDzrJKXOOY',
-    cover: getCoverUrl('4xDzrJKXOOY'),
-    addedAt: 1700000001000,
+    url: 'https://youtu.be/4xDzrJKXOOY',
   },
+  // Yangi treklaringizni shu yerga qo'shishingiz mumkin:
+  // {
+  //   title: 'Trek nomi',
+  //   artist: 'Ijrochi',
+  //   url: 'https://youtu.be/...',
+  // },
 ];
+
+export const DEFAULT_TRACKS = CUSTOM_TRACKS.map((item, index) => {
+  const videoId = extractVideoId(item.url || item.videoId);
+  if (!videoId) return null;
+  return {
+    id: item.id || `track-custom-${videoId}`,
+    title: item.title || 'YouTube Track',
+    artist: item.artist || 'YouTube',
+    videoId,
+    cover: item.cover || getCoverUrl(videoId),
+    addedAt: 1700000000000 + index * 1000,
+  };
+}).filter(Boolean);
 
 const load = () => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      save(DEFAULT_TRACKS);
-      return [...DEFAULT_TRACKS];
+    const parsed = raw ? JSON.parse(raw) : [];
+
+    const customList = CUSTOM_TRACKS.map((item, index) => {
+      const videoId = extractVideoId(item.url || item.videoId);
+      if (!videoId) return null;
+      return {
+        id: item.id || `track-custom-${videoId}`,
+        title: item.title || 'YouTube Track',
+        artist: item.artist || 'YouTube',
+        videoId,
+        cover: item.cover || getCoverUrl(videoId),
+        addedAt: 1700000000000 + index * 1000,
+      };
+    }).filter(Boolean);
+
+    const seen = new Set(customList.map((t) => t.videoId));
+    const merged = [...customList];
+
+    if (Array.isArray(parsed)) {
+      for (const t of parsed) {
+        if (t && t.videoId && !seen.has(t.videoId)) {
+          seen.add(t.videoId);
+          merged.push(t);
+        }
+      }
     }
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      save(DEFAULT_TRACKS);
-      return [...DEFAULT_TRACKS];
-    }
-    return parsed;
+
+    return merged;
   } catch {
     return [...DEFAULT_TRACKS];
   }

@@ -230,14 +230,47 @@ button, input {
 
 .player-error {
   width: 100%;
-  padding: 12px 14px;
-  border-radius: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
   background: rgba(255, 107, 107, 0.12);
   border: 1px solid rgba(255, 107, 107, 0.35);
   color: #ffb4b4;
   text-align: center;
   font-size: 14px;
-  line-height: 1.4;
+  line-height: 1.5;
+}
+
+.error-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.btn-error-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  background: #10b981;
+  color: #04231a;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform .15s ease, filter .15s ease;
+}
+
+.btn-error-action:hover {
+  transform: scale(1.04);
+  filter: brightness(1.1);
+}
+
+.btn-error-action.secondary {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
 }
 
 .btn-retry {

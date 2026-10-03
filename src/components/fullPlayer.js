@@ -56,8 +56,16 @@ export const mountFullPlayer = (containerId, store, player) => {
           </div>
         </div>
 
-        ${state.error ? `<div class="player-error" role="alert">${state.error}</div>` : ''}
-        ${state.error ? '<button class="btn-retry" type="button">Qayta urinish</button>' : ''}
+        ${state.error ? `
+          <div class="player-error" role="alert">
+            <p class="error-msg">${state.error}</p>
+            <div class="error-buttons">
+              <a class="btn-error-action" href="https://www.youtube.com/results?search_query=${encodeURIComponent((track?.title || '') + ' ' + (track?.artist || '') + ' lyrics audio')}" target="_blank" rel="noopener">🔍 Lyrics / Audio qidirish</a>
+              ${track?.videoId ? `<a class="btn-error-action secondary" href="https://www.youtube.com/watch?v=${track.videoId}" target="_blank" rel="noopener">↗ YouTube'da ochish</a>` : ''}
+              <button class="btn-retry" type="button">Qayta urinish</button>
+            </div>
+          </div>
+        ` : ''}
         ${state.isBuffering ? '<div class="buffering">Yuklanmoqda...</div>' : ''}
       </div>
     `;

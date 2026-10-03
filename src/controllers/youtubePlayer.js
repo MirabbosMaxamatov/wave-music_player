@@ -2,6 +2,11 @@ import { playerStore } from '../stores/playerStore.js';
 
 const EMBED_BLOCKED_CODES = new Set([100, 101, 150]);
 
+export const KNOWN_EMBED_FALLBACKS = {
+  // Empire Of The Sun - We Are The People (VEVO rasmiy klipi bloklangan -> Lyrics/Audio versiyasi)
+  'hN5X4kGhAtU': 'J7MFQAB6R-Q',
+};
+
 export class YouTubePlayer {
   constructor(containerId) {
     this.containerId = containerId;
@@ -51,15 +56,10 @@ export class YouTubePlayer {
           height: '200',
           playerVars: {
             autoplay: 0,
-            controls: 0,
-            disablekb: 1,
-            fs: 0,
-            modestbranding: 1,
+            controls: 1,
             playsinline: 1,
             rel: 0,
-            showinfo: 0,
-            iv_load_policy: 3,
-            origin: window.location.origin,
+            enablejsapi: 1,
           },
           events: {
             onReady: () => {
@@ -165,13 +165,26 @@ export class YouTubePlayer {
     playerStore.setBuffering(false);
     playerStore.setLoading(false);
 
+    if (EMBED_BLOCKED_CODES.has(code)) {
+      const fallbackId = KNOWN_EMBED_FALLBACKS[this.lastRequestedVideoId];
+      if (fallbackId && fallbackId !== this.lastRequestedVideoId) {
+        this.log('autoFallback', { from: this.lastRequestedVideoId, to: fallbackId });
+        playerStore.setError('Ushbu rasmiy klip bloklangan, avtomatik ravishda uning Audio/Lyrics versiyasiga o\'tilmoqda...');
+        setTimeout(() => {
+          this.loadVideo(fallbackId, true);
+        }, 500);
+        return;
+      }
+
+      this.retryCount = 0;
+      const blockedMessage = 'Ushbu video muallifi (VEVO/leybl) tomonidan tashqi saytlarda ijro etish cheklangan (Error 150). Buni chetlab o\'tish uchun uning "Lyrics" yoki "Audio" versiyasi havolasini ishlating.';
+      playerStore.setError(blockedMessage);
+      return;
+    }
+
     if (this.retryCount < this.maxRetries) {
       this.retryCount += 1;
-      const message = EMBED_BLOCKED_CODES.has(code)
-        ? 'This video is blocked by the uploader or browser settings. Try another track or use the Lofi test button.'
-        : `Unable to load this video (error ${code}). Retrying...`;
-      playerStore.setError(message);
-      this.log('retryingLoad', { videoId: this.lastRequestedVideoId, retryCount: this.retryCount });
+      playerStore.setError(`Videoni yuklashda xatolik (${code}). Qayta urinilmoqda...`);
       setTimeout(() => {
         if (this.lastRequestedVideoId) {
           this.loadVideo(this.lastRequestedVideoId, true);
@@ -181,10 +194,7 @@ export class YouTubePlayer {
     }
 
     this.retryCount = 0;
-    const blockedMessage = EMBED_BLOCKED_CODES.has(code)
-      ? 'This video is blocked by the owner or the browser, so it cannot play here. Try another YouTube link or use the Lofi test button.'
-      : `This video cannot be played right now (error ${code}). Please try another track.`;
-    playerStore.setError(blockedMessage);
+    playerStore.setError(`Ushbu videoni hozircha ijro etib bo'lmadi (xato ${code}). Boshqa trekni tanlang.`);
   }
 
   syncPlaybackStats() {

@@ -8,6 +8,14 @@ export const mountFullPlayer = (containerId, store, player) => {
     const state = store.getState();
     const track = state.currentTrack;
 
+    const isLiveStream = state.duration === 0 && (state.isPlaying || state.isBuffering);
+    const durationText = state.duration > 0
+      ? formatTime(state.duration)
+      : (isLiveStream ? '🔴 LIVE' : (track ? '--:--' : '0:00'));
+    const progressPercent = state.duration > 0
+      ? Math.min(100, Math.max(0, (state.currentTime / state.duration) * 100))
+      : (isLiveStream ? 100 : 0);
+
     el.innerHTML = `
       <div class="full-player ${track ? 'has-track' : ''}">
         <div class="cover-wrapper">
@@ -21,36 +29,36 @@ export const mountFullPlayer = (containerId, store, player) => {
         </div>
 
         <div class="track-info">
-          <h2 class="title">${track ? track.title : 'No Track'}</h2>
-          <p class="artist">${track ? track.artist : 'Add a track to start'}</p>
+          <h2 class="title">${track ? track.title : 'Trek tanlanmagan'}</h2>
+          <p class="artist">${track ? track.artist : 'Musiqa qo\'shish uchun pastdagi formadan foydalaning'}</p>
         </div>
 
         <div class="controls">
-          <button class="btn-prev" ${!state.playlist.length ? 'disabled' : ''}>⏮</button>
-          <button class="btn-play ${state.isPlaying ? 'playing' : ''}" ${!track ? 'disabled' : ''}>${state.isPlaying ? '⏸' : '▶'}</button>
-          <button class="btn-next" ${!state.playlist.length ? 'disabled' : ''}>⏭</button>
+          <button class="btn-prev" ${!state.playlist.length ? 'disabled' : ''} title="Oldingi trek">⏮</button>
+          <button class="btn-play ${state.isPlaying ? 'playing' : ''}" ${!track ? 'disabled' : ''} title="${state.isPlaying ? 'Pauza' : 'Ijro'}">${state.isPlaying ? '⏸' : '▶'}</button>
+          <button class="btn-next" ${!state.playlist.length ? 'disabled' : ''} title="Keyingi trek">⏭</button>
         </div>
 
-        <div class="progress-area">
-          <span class="time-current">${formatTime(state.currentTime)}</span>
-          <div class="progress-bar">
-            <div class="progress-fill" style="width: ${state.duration ? (state.currentTime / state.duration) * 100 : 0}%"></div>
-            <div class="progress-handle" style="left: ${state.duration ? (state.currentTime / state.duration) * 100 : 0}%"></div>
+        <div class="progress-area ${isLiveStream ? 'is-live' : ''}">
+          <span class="time-current">${isLiveStream ? 'Jonli efir' : formatTime(state.currentTime)}</span>
+          <div class="progress-bar" title="${isLiveStream ? 'Jonli efir' : 'Vaqtni o\'tkazish'}">
+            <div class="progress-fill" style="width: ${progressPercent}%"></div>
+            <div class="progress-handle" style="left: ${progressPercent}%"></div>
           </div>
-          <span class="time-duration">${formatTime(state.duration)}</span>
+          <span class="time-duration">${durationText}</span>
         </div>
 
         <div class="volume-area">
           <span>🔊</span>
-          <div class="volume-bar">
+          <div class="volume-bar" title="Ovoz balandligi">
             <div class="volume-fill" style="width: ${state.volume}%"></div>
             <div class="volume-handle" style="left: ${state.volume}%"></div>
           </div>
         </div>
 
         ${state.error ? `<div class="player-error" role="alert">${state.error}</div>` : ''}
-        ${state.error ? '<button class="btn-retry" type="button">Retry</button>' : ''}
-        ${state.isBuffering ? '<div class="buffering">Loading...</div>' : ''}
+        ${state.error ? '<button class="btn-retry" type="button">Qayta urinish</button>' : ''}
+        ${state.isBuffering ? '<div class="buffering">Yuklanmoqda...</div>' : ''}
       </div>
     `;
 
@@ -79,10 +87,12 @@ export const mountFullPlayer = (containerId, store, player) => {
       if (currentState.isPlaying) {
         player.pause();
       } else {
-        if (currentState.currentTrack?.videoId) {
-          player.loadVideo(currentState.currentTrack.videoId);
+        const vid = currentState.currentTrack.videoId;
+        if (player.lastRequestedVideoId === vid) {
+          player.play();
+        } else {
+          player.loadVideo(vid);
         }
-        player.play();
       }
     });
 

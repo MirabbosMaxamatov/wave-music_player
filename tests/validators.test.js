@@ -6,8 +6,14 @@ import { createLofiTrack, buildTrackFromUrl } from '../src/data/tracks.js';
 
 test('extractVideoId extracts a valid YouTube video id from common URLs', () => {
   assert.equal(extractVideoId('https://youtu.be/jfKfPfyJRdk'), 'jfKfPfyJRdk');
+  assert.equal(extractVideoId('https://youtu.be/jfKfPfyJRdk?si=random_token123'), 'jfKfPfyJRdk');
   assert.equal(extractVideoId('https://www.youtube.com/watch?v=dQw4w9WgXcQ'), 'dQw4w9WgXcQ');
+  assert.equal(extractVideoId('https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=RDdQw4w9WgXcQ'), 'dQw4w9WgXcQ');
+  assert.equal(extractVideoId('https://music.youtube.com/watch?v=4xDzrJKXOOY'), '4xDzrJKXOOY');
+  assert.equal(extractVideoId('https://m.youtube.com/watch?v=4xDzrJKXOOY'), '4xDzrJKXOOY');
+  assert.equal(extractVideoId('https://www.youtube.com/live/jfKfPfyJRdk?si=test'), 'jfKfPfyJRdk');
   assert.equal(extractVideoId('https://youtube.com/shorts/jfKfPfyJRdk?feature=share'), 'jfKfPfyJRdk');
+  assert.equal(extractVideoId('jfKfPfyJRdk'), 'jfKfPfyJRdk');
 });
 
 test('createLofiTrack creates a known working fallback track', () => {
@@ -25,3 +31,4 @@ test('buildTrackFromUrl creates a stored track object from a valid YouTube URL',
   assert.equal(track.artist, 'Wave Studio');
   assert.ok(track.id.startsWith('track-'));
 });
+

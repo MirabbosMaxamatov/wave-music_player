@@ -10,7 +10,6 @@ const init = async () => {
   console.log('[WaveMusic:init]', 'Starting app bootstrap');
 
   const ytPlayer = new HybridPlayer('yt-player');
-  await ytPlayer.init();
 
   const tracks = getAllTracks();
   playerStore.setPlaylist(tracks);
@@ -20,18 +19,15 @@ const init = async () => {
   mountPlaylist('playlist-panel', playerStore, ytPlayer);
   setupMediaSession(playerStore);
 
+  ytPlayer.init().catch((err) => {
+    console.warn('[WaveMusic:init] Player init warning:', err);
+  });
+
   let requestedVideoId = null;
   let hasUserInteracted = false;
 
   const unlockPlayback = () => {
-    if (hasUserInteracted) return;
     hasUserInteracted = true;
-    console.log('[WaveMusic:userGesture]', 'User interaction detected');
-
-    const state = playerStore.getState();
-    if (state.currentTrack?.videoId) {
-      ytPlayer.loadVideo(state.currentTrack.videoId);
-    }
   };
 
   document.addEventListener('pointerdown', unlockPlayback, { passive: true });
@@ -47,24 +43,13 @@ const init = async () => {
       return;
     }
 
-    if (state.isPlaying || !state.isBuffering || !hasUserInteracted) {
-      if (state.isPlaying) {
-        requestedVideoId = videoId;
-      }
-      return;
-    }
-
-    if (videoId !== requestedVideoId) {
+    // Auto-advance or queued track selection
+    if (state.isBuffering && videoId !== requestedVideoId && hasUserInteracted) {
       requestedVideoId = videoId;
       console.log('[WaveMusic:subscription]', 'Loading queued track', videoId);
       ytPlayer.loadVideo(videoId);
     }
   });
-
-  if (tracks.length > 0) {
-    playerStore.playTrack(0);
-    console.log('[WaveMusic:init]', 'Loaded playlist; waiting for user interaction before first play');
-  }
 };
 
 document.addEventListener('DOMContentLoaded', init);

@@ -8,6 +8,7 @@ export class YouTubePlayer {
     this.container = document.getElementById(containerId);
     this.player = null;
     this.ready = false;
+    this.pendingVideoId = null;
     this.timeInterval = null;
     this.lastRequestedVideoId = null;
     this.retryCount = 0;
@@ -26,16 +27,28 @@ export class YouTubePlayer {
         return;
       }
 
+      if (this.ready && this.player) {
+        resolve();
+        return;
+      }
+
+      const timeoutId = setTimeout(() => {
+        this.log('initTimeout', 'YT Player ready timeout reached');
+        resolve();
+      }, 7000);
+
       const createPlayer = () => {
         if (!window.YT || !window.YT.Player) {
           this.log('initWaitingForYTAPI', 'YT Player is not ready yet');
           return;
         }
 
+        if (this.player) return;
+
         this.log('createPlayer', 'Creating hidden YT iframe player');
         this.player = new YT.Player(this.container, {
-          width: '1',
-          height: '1',
+          width: '200',
+          height: '200',
           playerVars: {
             autoplay: 0,
             controls: 0,
@@ -46,13 +59,23 @@ export class YouTubePlayer {
             rel: 0,
             showinfo: 0,
             iv_load_policy: 3,
+            origin: window.location.origin,
           },
           events: {
             onReady: () => {
+              clearTimeout(timeoutId);
               this.ready = true;
               this.log('onReady', 'Player is ready');
-              this.player.setVolume(playerStore.getState().volume);
+              try {
+                this.player.setVolume(playerStore.getState().volume);
+              } catch {}
               playerStore.clearError();
+
+              if (this.pendingVideoId) {
+                const vid = this.pendingVideoId;
+                this.pendingVideoId = null;
+                this.loadVideo(vid);
+              }
               resolve();
             },
             onStateChange: (event) => this.handleStateChange(event.data),
@@ -66,10 +89,18 @@ export class YouTubePlayer {
         return;
       }
 
+      const checkInterval = setInterval(() => {
+        if (window.YT && window.YT.Player) {
+          clearInterval(checkInterval);
+          createPlayer();
+        }
+      }, 200);
+
       const previousHandler = window.onYouTubeIframeAPIReady;
       window.onYouTubeIframeAPIReady = () => {
+        clearInterval(checkInterval);
         this.log('iframeAPIReady', 'YouTube iframe API loaded');
-        if (previousHandler) previousHandler();
+        if (typeof previousHandler === 'function') previousHandler();
         createPlayer();
       };
 
@@ -84,6 +115,13 @@ export class YouTubePlayer {
 
   handleStateChange(state) {
     this.log('handleStateChange', state);
+
+    try {
+      const dur = Number(this.player?.getDuration?.()) || 0;
+      if (dur > 0) {
+        playerStore.setDuration(dur);
+      }
+    } catch {}
 
     if (state === YT.PlayerState.PLAYING) {
       playerStore.clearError();
@@ -194,6 +232,7 @@ export class YouTubePlayer {
 
     if (!this.ready || !this.player) {
       this.log('loadVideoWaitingForReady', cleanId);
+      this.pendingVideoId = cleanId;
       playerStore.setLoading(true);
       playerStore.setBuffering(true);
       return;
@@ -203,7 +242,15 @@ export class YouTubePlayer {
     playerStore.clearError();
     playerStore.setLoading(true);
     playerStore.setBuffering(true);
-    this.player.loadVideoById(cleanId);
+    try {
+      this.player.loadVideoById(cleanId);
+    } catch (e) {
+      this.log('loadVideoError', e);
+      try {
+        this.player.cueVideoById(cleanId);
+        this.player.playVideo();
+      } catch {}
+    }
   }
 
   retryLastLoad() {

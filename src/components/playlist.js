@@ -1,4 +1,5 @@
-import { getAllTracks, addTrack, removeTrack, createLofiTrack } from '../data/tracks.js';
+import { getAllTracks, addTrack, removeTrack, updateTrack, fetchTrackMetadata, createLofiTrack } from '../data/tracks.js';
+import { extractVideoId } from '../utils/validators.js';
 
 /**
  * Playlist paneli.
@@ -184,31 +185,70 @@ export const mountPlaylist = (containerId, store, player) => {
 
   cancelBtn.addEventListener('click', closeForm);
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const url = urlInput.value.trim();
     if (!url) {
-      error.textContent = 'Please paste a YouTube link.';
+      error.textContent = 'Iltimos, YouTube havolasini kiriting.';
       error.hidden = false;
       urlInput.focus();
       return;
     }
 
-    try {
-      const newTrack = addTrack(url, titleInput.value.trim(), artistInput.value.trim());
-      store.setPlaylist(getAllTracks());
+    const videoId = extractVideoId(url);
+    if (!videoId) {
+      error.textContent = 'Noto\'g\'ri YouTube havolasi. Havola quyidagicha bo\'lishi kerak: youtu.be/... yoki youtube.com/watch?v=...';
+      error.hidden = false;
+      urlInput.focus();
+      return;
+    }
 
-      // Birinchi trek qo'shilsa — darhol o'ynatamiz
-      if (getAllTracks().length === 1) {
-        store.playTrack(0);
+    const customTitle = titleInput.value.trim();
+    const customArtist = artistInput.value.trim();
+
+    try {
+      const newTrack = addTrack(url, customTitle, customArtist);
+      const allTracks = getAllTracks();
+      store.setPlaylist(allTracks);
+
+      const trackIndex = allTracks.findIndex((t) => t.id === newTrack.id);
+      if (trackIndex >= 0) {
+        store.playTrack(trackIndex);
         player?.loadVideo?.(newTrack.videoId);
       }
 
       closeForm();
       render();
+
+      // Agar sarlavha kiritilmagan bo'lsa, YouTube'dan asl nomini olamiz
+      if (!customTitle || !customArtist) {
+        fetchTrackMetadata(videoId)
+          .then((meta) => {
+            if (meta && (meta.title || meta.artist)) {
+              updateTrack(newTrack.id, {
+                title: customTitle || meta.title || newTrack.title,
+                artist: customArtist || meta.artist || newTrack.artist,
+              });
+              store.setPlaylist(getAllTracks());
+              render();
+            }
+          })
+          .catch(() => {});
+      }
     } catch (err) {
-      error.textContent = err.message;
+      if (err.code === 'TRACK_EXISTS' && err.existingTrack) {
+        const allTracks = getAllTracks();
+        const existingIdx = allTracks.findIndex((t) => t.videoId === err.existingTrack.videoId);
+        if (existingIdx >= 0) {
+          store.playTrack(existingIdx);
+          player?.loadVideo?.(err.existingTrack.videoId);
+        }
+        closeForm();
+        render();
+        return;
+      }
+      error.textContent = err.message || 'Trekni qo\'shishda xatolik yuz berdi.';
       error.hidden = false;
     }
   });

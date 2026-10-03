@@ -90,8 +90,7 @@ export class HybridPlayer {
     playerStore.setLoading(true);
     playerStore.setBuffering(true);
 
-    const youtubeAllowed = videoId ? await this.checkYouTubeOEmbed(videoId) : false;
-    if (youtubeAllowed) {
+    if (videoId) {
       this.currentSource = 'youtube';
       this.audio.pause();
       this.youtube.loadVideo(videoId);
